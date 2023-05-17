@@ -1,52 +1,104 @@
 import express from 'express';
+import User from '../models/user.js';
 
 const router = express.Router();
 
-import { v4 as uuidv4 } from 'uuid';
+
+// import { v4 as uuidv4 } from 'uuid';
 
 
-let users  = [
-
-]
+let users  = []
 
 
-router.get('/', (req, res) => {
-    console.log(users)
-    res.send(users);
+router.get("/", async (req, res) => {
+    try {
+      const users = await User.find({});
+      res.json(users);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server error");
+    }
+  });
+
+router.post('/', async (req, res) => {
+    try{
+        const {firstName, lastName, age} = req.body;
+        const newUser = new User({firstName, lastName, age});
+        await newUser.save();
+        res.status(201).json(newUser);
+    }
+    catch(error){
+        console.error(error);
+        res.status(500).send("Server error");
+
+    }
 })
+router.get("/:id", async (req, res) => {
+    try {
+      const user = await User.findById(req.params.id);
+      if (!user) return res.status(404).send("User not found");
+      res.json(user);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Server error");
+    }
+  });
 
-router.post('/', (req, res) => {
-    const user = (req.body)
-    const userID = uuidv4();
-    // const userWithId = {...user, id:userID}
-    users.push({...user, id:userID});
 
-    res.send(`user with  the name ${user.FirstName} added to the Db.`)
-})
+  router.delete('/:id', async (req, res) => {
+    try {
+      const id = req.params.id;
+      const user = await User.findByIdAndDelete(id).exec();
+  
+      if (!user) {
+        return us.status(404).send({ error: 'Document not found' });
+      }
+  
+      res.send({ message: 'Document deleted' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send({ error: 'Server error' });
+    }
+  });
 
-router.get('/:id', (req, res)=>{
-    const {id} = req.params;
-    const foundUser = users.find((user)=> user.id ===id);
-    res.send(foundUser);
-})
 
-router.delete('/:id', (req, res)=>{
-    const {id} = req.params;
-      users = users.filter((user)=>{
-       return user.id !== id;
-   }
-   )
-    res.send(`user with the id ${id} deleted from the db`);
-})
-
-router.patch('/:id',(req, res)=>{
-    const { id } = req.params;
+router.patch('/:id', async (req, res)=>{
+    try{
+        const id = req.params.id;
     const {firstName, lastName, age} = req.body;
-    const user = users.find(user => user.id === id);
-    if(firstName) user.firstName=firstName;
-    if(lastName) user.lastName=lastName;
-    if(age) user.age=age;
+    const user = await User.findOneAndUpdate({_id:id},{firstName,lastName,age});
+
     res.send(`user with the id ${id} has been updated`)
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).send({ error: 'Server error' });
+      }
+    
+})
+
+router.get('/', async (req, res) => {
+  try {
+    const user = User.aggregate([
+      {
+        $match:{}
+      },
+
+   {
+    $group:{
+
+    }
+   }
+   
+    ])
+  }
+  catch(error){
+    res.status(404).json({
+      status: "failed",
+
+    })
+
+  }
 })
 
 
